@@ -3,24 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <title>4 of a Kind Poker Wahrscheinlichkeiten</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #0b3b26;
       color: #f5f5f5;
       margin: 0;
-      padding: 12px;
+      padding: 10px;
       box-sizing: border-box;
-      font-size: 14px;
+      font-size: 15px;
     }
-    h1 { margin: 0 0 8px 0; font-size: 22px; }
+    h1 { margin: 0 0 8px 0; font-size: 22px; text-align: center; }
     h2 { margin: 0 0 6px 0; font-size: 16px; }
 
-    .wrapper { max-width: 1100px; margin: 0 auto; }
+    .wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+    }
 
     .top-row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
+      align-items: stretch;
     }
 
     .card-panel {
@@ -29,6 +34,7 @@
       padding: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.5);
       flex: 1;
+      min-width: 0;
     }
 
     label {
@@ -41,27 +47,31 @@
     input[type="text"],
     input[type="number"] {
       width: 100%;
-      padding: 6px;
+      padding: 7px;
       margin-top: 3px;
       border-radius: 4px;
       border: 1px solid #ccc;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       box-sizing: border-box;
     }
 
     button {
-      margin-top: 10px;
-      padding: 6px 12px;
+      margin-top: 8px;
+      padding: 8px 12px;
       border-radius: 5px;
       border: none;
       cursor: pointer;
       font-weight: bold;
       background: #f0c419;
       color: #222;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      width: 100%;
     }
 
-    .results p { margin: 3px 0; font-size: 0.9rem; }
+    .results p {
+      margin: 3px 0;
+      font-size: 0.9rem;
+    }
 
     .highlight {
       font-weight: bold;
@@ -90,11 +100,15 @@
     }
 
     .bar-fill { height: 100%; border-radius: 6px; }
-    .bar-win { background: #4caf50; }
-    .bar-tie { background: #ffc107; }
+    .bar-win  { background: #4caf50; }
+    .bar-tie  { background: #ffc107; }
     .bar-lose { background: #f44336; }
 
-    .small-note { font-size: 0.7rem; opacity: 0.8; }
+    .small-note {
+      font-size: 0.7rem;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
 
     .table-container {
       margin-top: 10px;
@@ -106,25 +120,27 @@
 
     .poker-table {
       position: relative;
-      width: 640px;
-      height: 245px;
+      width: 100%;
+      max-width: 480px;
+      height: 230px;
       margin: 0 auto;
       border-radius: 50% / 40%;
       background: radial-gradient(circle at center, #f9e79f 0%, #b7950b 45%, #7d6608 80%);
       border: 6px solid #5d4037;
+      box-sizing: border-box;
     }
 
     .board-area,
     .hero-area {
+      position: absolute;
       display: flex;
       gap: 6px;
-      position: absolute;
     }
 
     .board-area {
       top: 48%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,-50%);
     }
 
     .hero-area {
@@ -134,8 +150,6 @@
     }
 
     .playing-card {
-      width: 52px;
-      height: 74px;
       background: #fff;
       border-radius: 5px;
       border: 1px solid #333;
@@ -145,6 +159,13 @@
       align-items: center;
       justify-content: center;
       font-size: 1rem;
+      /* responsive Größe */
+      width: 14vw;
+      height: 20vw;
+      max-width: 60px;
+      max-height: 84px;
+      min-width: 40px;
+      min-height: 56px;
     }
 
     .playing-card.red { color: #c62828; }
@@ -158,6 +179,18 @@
 
     .playing-card .suit {
       font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .top-row {
+        flex-direction: column;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      body {
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -176,7 +209,7 @@
       <input type="text" id="boardCards" placeholder="z.B. 9h8p7k">
 
       <label for="opponents">Gegner</label>
-      <input type="number" id="opponents" min="1" max="8" step="1" placeholder="">
+      <input type="number" id="opponents" min="1" max="8" step="1" placeholder="1–8">
 
       <p class="small-note">
         Enter = sofort berechnen<br>
@@ -208,7 +241,6 @@ const rankValues = {
 };
 const suitsSymbols = { s: "♠", h: "♥", d: "♦", c: "♣" };
 
-// Rang-Eingabe: a,k,d/q,b/j,t/10,9-2
 function rankCharToInternal(c) {
   c = c.toLowerCase();
   if (c === "a") return "A";
@@ -220,7 +252,6 @@ function rankCharToInternal(c) {
   throw new Error("Ungültiger Rang: " + c);
 }
 
-// Farben: h (Herz), p (Pik), k (Kreuz), c (Karo)
 function suitCharToInternal(c) {
   c = c.toLowerCase();
   if (c === "h") return "h";          // Herz
@@ -239,7 +270,6 @@ function parseCardsCompact(input) {
   while (i < s.length) {
     let r, f;
     if (i + 2 < s.length && s[i] === "1" && s[i + 1] === "0") {
-      // 10x
       r = "T";
       f = suitCharToInternal(s[i + 2]);
       i += 3;
@@ -324,6 +354,7 @@ function evaluate5(cards) {
       ) {
         isStraight = true;
         straightHigh = uniqueRanks[i];
+        break;
       }
     }
   }
@@ -359,6 +390,7 @@ function evaluate5(cards) {
         ) {
           isStraightFlush = true;
           straightFlushHigh = uniqueFlushRanks[i];
+          break;
         }
       }
       if (
@@ -379,54 +411,45 @@ function evaluate5(cards) {
     .map(([r, c]) => ({ rank: parseInt(r, 10), count: c }))
     .sort((a, b) => (b.count - a.count) || (b.rank - a.rank));
 
-  // 8: Straight Flush
   if (isStraightFlush) {
     return { cat: 8, ranks: [straightFlushHigh] };
   }
-  // 7: Vierling
   if (counts[0].count === 4) {
     const quadRank = counts[0].rank;
     const kicker = ranks.find(r => r !== quadRank);
     return { cat: 7, ranks: [quadRank, kicker] };
   }
-  // 6: Full House
   if (counts[0].count === 3 && counts[1] && counts[1].count >= 2) {
     return { cat: 6, ranks: [counts[0].rank, counts[1].rank] };
   }
-  // 5: Flush
   if (isFlush) {
     const flushSuit = Object.keys(suitCounts).find(s => suitCounts[s] === 5);
-    const flushRanks = cards
+    const flushRanksTop = cards
       .filter(c => c.suit === flushSuit)
       .map(c => c.rank)
       .sort((a, b) => b - a)
       .slice(0, 5);
-    return { cat: 5, ranks: flushRanks };
+    return { cat: 5, ranks: flushRanksTop };
   }
-  // 4: Straight
   if (isStraight) {
     return { cat: 4, ranks: [straightHigh] };
   }
-  // 3: Drilling
   if (counts[0].count === 3) {
     const tripRank = counts[0].rank;
     const kickers = ranks.filter(r => r !== tripRank).slice(0, 2);
     return { cat: 3, ranks: [tripRank, ...kickers] };
   }
-  // 2: Zwei Paare
   if (counts[0].count === 2 && counts[1] && counts[1].count === 2) {
     const highPair = Math.max(counts[0].rank, counts[1].rank);
     const lowPair = Math.min(counts[0].rank, counts[1].rank);
     const kicker = ranks.find(r => r !== highPair && r !== lowPair);
     return { cat: 2, ranks: [highPair, lowPair, kicker] };
   }
-  // 1: Paar
   if (counts[0].count === 2) {
     const pairRank = counts[0].rank;
     const kickers = ranks.filter(r => r !== pairRank).slice(0, 3);
     return { cat: 1, ranks: [pairRank, ...kickers] };
   }
-  // 0: High Card
   return { cat: 0, ranks: ranks.slice(0, 5) };
 }
 
@@ -441,7 +464,6 @@ function compareHands(h1, h2) {
   return 0;
 }
 
-// beste 5 aus N (N = 5..7)
 function evaluateBestOfN(cards) {
   const n = cards.length;
   if (n < 5) throw new Error("Zu wenige Karten.");
@@ -554,7 +576,6 @@ function runSimulation() {
   for (let sim = 0; sim < simCount; sim++) {
     const deck = baseDeck.slice();
 
-    // Board auffüllen bis 5 Karten
     const boardSimStrs = board.slice();
     while (boardSimStrs.length < 5) {
       if (deck.length === 0) break;
@@ -564,7 +585,6 @@ function runSimulation() {
     if (boardSimStrs.length < 5) continue;
     const boardSimObjs = boardSimStrs.map(cardObj);
 
-    // Gegnerhände
     const villains = [];
     let fail = false;
     for (let i = 0; i < opp; i++) {
@@ -661,9 +681,7 @@ function runSimulation() {
 }
 
 document.getElementById("runSim").addEventListener("click", runSimulation);
-
-// Enter in allen Feldern zum Start
-["heroHand", "boardCards", "opponents"].forEach(id => {
+["heroHand","boardCards","opponents"].forEach(id => {
   document.getElementById(id).addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
